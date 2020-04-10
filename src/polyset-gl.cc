@@ -3,38 +3,57 @@
 #include "linalg.h"
 #include "printutils.h"
 #include "grid.h"
+#include "GLView.h"
 #include <Eigen/LU>
 // all GL functions grouped together here
 
 
 #ifdef ENABLE_OPENCSG
-static void draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector3d &p1, const Vector3d &p2,
+static void draw_triangle(const GLView::shaderinfo_t *shaderinfo, const Vector3d &p0, const Vector3d &p1, const Vector3d &p2,
 													double e0f, double e1f, double e2f, double z, bool mirror)
-{  
-	glVertexAttrib3d(shaderinfo[3], e0f, e1f, e2f);
-	glVertexAttrib3d(shaderinfo[4], p1[0], p1[1], p1[2] + z);
-	glVertexAttrib3d(shaderinfo[5], p2[0], p2[1], p2[2] + z);
-	glVertexAttrib3d(shaderinfo[6], 0.0, 1.0, 0.0);
-	glVertex3d(p0[0], p0[1], p0[2] + z); 
-	if (!mirror) {
-		glVertexAttrib3d(shaderinfo[3], e0f, e1f, e2f);
-		glVertexAttrib3d(shaderinfo[4], p0[0], p0[1], p0[2] + z);
-		glVertexAttrib3d(shaderinfo[5], p2[0], p2[1], p2[2] + z);
-		glVertexAttrib3d(shaderinfo[6], 0.0, 0.0, 1.0);
-		glVertex3d(p1[0], p1[1], p1[2] + z); 
+{
+	GLView::shaderinfo_t::shader_type_t type = (shaderinfo)?shaderinfo->type : GLView::shaderinfo_t::NONE;
+
+	switch(type) {
+		case GLView::shaderinfo_t::CSG_RENDERING:
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.trig, e0f, e1f, e2f);
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.point_b, p1[0], p1[1], p1[2] + z);
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.point_c, p2[0], p2[1], p2[2] + z);
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.mask, 0.0, 1.0, 0.0);
+			glVertex3d(p0[0], p0[1], p0[2] + z);
+			if (!mirror) {
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.trig, e0f, e1f, e2f);
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.point_b, p0[0], p0[1], p0[2] + z);
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.point_c, p2[0], p2[1], p2[2] + z);
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.mask, 0.0, 0.0, 1.0);
+				glVertex3d(p1[0], p1[1], p1[2] + z);
+			}
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.trig, e0f, e1f, e2f);
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.point_b, p0[0], p0[1], p0[2] + z);
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.point_c, p1[0], p1[1], p1[2] + z);
+			glVertexAttrib3d(shaderinfo->data.csg_rendering.mask, 1.0, 0.0, 0.0);
+			glVertex3d(p2[0], p2[1], p2[2] + z);
+			if (mirror) {
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.trig, e0f, e1f, e2f);
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.point_b, p0[0], p0[1], p0[2] + z);
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.point_c, p2[0], p2[1], p2[2] + z);
+				glVertexAttrib3d(shaderinfo->data.csg_rendering.mask, 0.0, 0.0, 1.0);
+				glVertex3d(p1[0], p1[1], p1[2] + z);
+			}
+			break;
+	default:
+	case GLView::shaderinfo_t::SELECT_RENDERING:
+		glVertex3d(p0[0], p0[1], p0[2] + z);
+		if (!mirror) {
+			glVertex3d(p1[0], p1[1], p1[2] + z);
+		}
+		glVertex3d(p2[0], p2[1], p2[2] + z);
+		if (mirror) {
+			glVertex3d(p1[0], p1[1], p1[2] + z);
+		}
+		break;
 	}
-	glVertexAttrib3d(shaderinfo[3], e0f, e1f, e2f);
-	glVertexAttrib3d(shaderinfo[4], p0[0], p0[1], p0[2] + z);
-	glVertexAttrib3d(shaderinfo[5], p1[0], p1[1], p1[2] + z);
-	glVertexAttrib3d(shaderinfo[6], 1.0, 0.0, 0.0);
-	glVertex3d(p2[0], p2[1], p2[2] + z);
-	if (mirror) {
-		glVertexAttrib3d(shaderinfo[3], e0f, e1f, e2f);
-		glVertexAttrib3d(shaderinfo[4], p0[0], p0[1], p0[2] + z);
-		glVertexAttrib3d(shaderinfo[5], p2[0], p2[1], p2[2] + z);
-		glVertexAttrib3d(shaderinfo[6], 0.0, 0.0, 1.0);
-		glVertex3d(p1[0], p1[1], p1[2] + z);
-	}
+
 }
 #endif
 
@@ -44,10 +63,10 @@ static void draw_tri(const Vector3d &p0, const Vector3d &p1, const Vector3d &p2,
 	glVertex3d(p0[0], p0[1], p0[2] + z);
 	if (!mirror) glVertex3d(p1[0], p1[1], p1[2] + z);
 	glVertex3d(p2[0], p2[1], p2[2] + z);
-	if (mirror) glVertex3d(p1[0], p1[1], p1[2] + z); 
+	if (mirror) glVertex3d(p1[0], p1[1], p1[2] + z);
 }
 
-static void gl_draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector3d &p1, const Vector3d &p2, bool e0, bool e1, bool e2, double z, bool mirrored)
+static void gl_draw_triangle(const GLView::shaderinfo_t *shaderinfo, const Vector3d &p0, const Vector3d &p1, const Vector3d &p2, bool e0, bool e1, bool e2, double z, bool mirrored)
 {
 	double ax = p1[0] - p0[0], bx = p1[0] - p2[0];
 	double ay = p1[1] - p0[1], by = p1[1] - p2[1];
@@ -59,6 +78,7 @@ static void gl_draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector
 	glNormal3d(nx / nl, ny / nl, nz / nl);
 #ifdef ENABLE_OPENCSG
 	if (shaderinfo) {
+		// 2.0: line width in px
 		double e0f = e0 ? 2.0 : -1.0;
 		double e1f = e1 ? 2.0 : -1.0;
 		double e2f = e2 ? 2.0 : -1.0;
@@ -71,14 +91,14 @@ static void gl_draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector
 	}
 }
 
-void PolySet::render_surface(Renderer::csgmode_e csgmode, const Transform3d &m, GLint *shaderinfo) const
+void PolySet::render_surface(Renderer::csgmode_e csgmode, const Transform3d &m, const GLView::shaderinfo_t *shaderinfo) const
 {
 	PRINTD("Polyset render");
 	bool mirrored = m.matrix().determinant() < 0;
 #ifdef ENABLE_OPENCSG
-	if (shaderinfo) {
-		glUniform1f(shaderinfo[7], shaderinfo[9]);
-		glUniform1f(shaderinfo[8], shaderinfo[10]);
+	if (shaderinfo  && shaderinfo->type == GLView::shaderinfo_t::CSG_RENDERING) {
+		glUniform1f(shaderinfo->data.csg_rendering.xscale, shaderinfo->vp_size_x);
+		glUniform1f(shaderinfo->data.csg_rendering.yscale, shaderinfo->vp_size_y);
 	}
 #endif /* ENABLE_OPENCSG */
 	if (this->dim == 2) {
@@ -251,8 +271,8 @@ void PolySet::render_edges(Renderer::csgmode_e csgmode) const
 
 
 #else //NULLGL
-static void gl_draw_triangle(GLint *shaderinfo, const Vector3d &p0, const Vector3d &p1, const Vector3d &p2, bool e0, bool e1, bool e2, double z, bool mirrored) {}
-void PolySet::render_surface(Renderer::csgmode_e csgmode, const Transform3d &m, GLint *shaderinfo) const {}
+static void gl_draw_triangle(void *shaderinfo, const Vector3d &p0, const Vector3d &p1, const Vector3d &p2, bool e0, bool e1, bool e2, double z, bool mirrored) {}
+void PolySet::render_surface(Renderer::csgmode_e csgmode, const Transform3d &m, void *shaderinfo) const {}
 void PolySet::render_edges(Renderer::csgmode_e csgmode) const {}
 #endif //NULLGL
 

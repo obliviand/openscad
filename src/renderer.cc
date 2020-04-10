@@ -44,8 +44,12 @@ Renderer::Renderer() : colorscheme(nullptr)
 	PRINTD("Renderer() end");
 }
 
-void Renderer::setColor(const float color[4], GLint *shaderinfo) const
+void Renderer::setColor(const float color[4], const GLView::shaderinfo_t *shaderinfo) const
 {
+	if (shaderinfo && shaderinfo->type != GLView::shaderinfo_t::CSG_RENDERING) {
+		return;
+	}
+
 	PRINTD("setColor a");
 	Color4f col;
 	getColor(ColorMode::MATERIAL,col);
@@ -57,14 +61,14 @@ void Renderer::setColor(const float color[4], GLint *shaderinfo) const
 	glColor4fv(c);
 #ifdef ENABLE_OPENCSG
 	if (shaderinfo) {
-		glUniform4f(shaderinfo[1], c[0], c[1], c[2], c[3]);
-		glUniform4f(shaderinfo[2], (c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
+		glUniform4f(shaderinfo->data.csg_rendering.color_area, c[0], c[1], c[2], c[3]);
+		glUniform4f(shaderinfo->data.csg_rendering.color_edge, (c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
 	}
 #endif
 }
 
 // returns the color which has been set, which may differ from the color input parameter
-Color4f Renderer::setColor(ColorMode colormode, const float color[4], GLint *shaderinfo) const
+Color4f Renderer::setColor(ColorMode colormode, const float color[4], const GLView::shaderinfo_t *shaderinfo) const
 {
 	PRINTD("setColor b");
 	Color4f basecol;
@@ -86,16 +90,16 @@ Color4f Renderer::setColor(ColorMode colormode, const float color[4], GLint *sha
 	return basecol;
 }
 
-void Renderer::setColor(ColorMode colormode, GLint *shaderinfo) const
-{	
+void Renderer::setColor(ColorMode colormode, const GLView::shaderinfo_t *shaderinfo) const
+{
 	PRINTD("setColor c");
 	float c[4] = {-1,-1,-1,-1};
 	setColor(colormode, c, shaderinfo);
 }
 
-/* fill this->colormap with matching entries from the colorscheme. note 
-this does not change Highlight or Background colors as they are not 
-represented in the colorscheme (yet). Also edgecolors are currently the 
+/* fill this->colormap with matching entries from the colorscheme. note
+this does not change Highlight or Background colors as they are not
+represented in the colorscheme (yet). Also edgecolors are currently the
 same for CGAL & OpenCSG */
 void Renderer::setColorScheme(const ColorScheme &cs) {
 	PRINTD("setColorScheme");
@@ -107,7 +111,7 @@ void Renderer::setColorScheme(const ColorScheme &cs) {
 	this->colorscheme = &cs;
 }
 
-void Renderer::render_surface(shared_ptr<const Geometry> geom, csgmode_e csgmode, const Transform3d &m, GLint *shaderinfo)
+void Renderer::render_surface(shared_ptr<const Geometry> geom, csgmode_e csgmode, const Transform3d &m, const GLView::shaderinfo_t *shaderinfo)
 {
 	auto ps = dynamic_pointer_cast<const PolySet>(geom);
 	if (ps) ps->render_surface(csgmode, m, shaderinfo);

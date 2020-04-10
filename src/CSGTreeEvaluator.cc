@@ -29,7 +29,7 @@
 shared_ptr<CSGNode> CSGTreeEvaluator::buildCSGTree(const AbstractNode &node)
 {
 	this->traverse(node);
-	
+
 	shared_ptr<CSGNode> t(this->stored_term[node.index()]);
 	if (t) {
 		if (t->isHighlight()) this->highlightNodes.push_back(t);
@@ -66,7 +66,7 @@ void CSGTreeEvaluator::applyToChildren(State &state, const AbstractNode &node, O
 
 			shared_ptr<CSGNode> t;
 			// Handle background
-			if (t1->isBackground() && 
+			if (t1->isBackground() &&
 					// For difference, we inherit the flag from the positive object
 					(t2->isBackground() || op == OpenSCADOperator::DIFFERENCE)) {
 				t = CSGOperation::createCSGNode(op, t1, t2);
@@ -189,7 +189,7 @@ shared_ptr<CSGNode> CSGTreeEvaluator::evaluateCSGNodeFromGeometry(
 		// 3D Polysets are tessellated before inserting into Geometry cache, inside GeometryEvaluator::evaluateGeometry
 	}
 
-	shared_ptr<CSGNode> t(new CSGLeaf(g, state.matrix(), state.color(), STR(node.name() << node.index())));
+	shared_ptr<CSGNode> t(new CSGLeaf(g, state.matrix(), state.color(), STR(node.name() << node.index()), node.index(), modinst->location()));
 	if (modinst->isHighlight() || state.isHighlight()) t->setHighlight(true);
 	if (modinst->isBackground() || state.isBackground()) t->setBackground(true);
 	return t;

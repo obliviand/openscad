@@ -38,12 +38,20 @@ public:
 		return this->backgroundNodes;
 	}
 
+	std::shared_ptr<CSGNode> getNodeByIndex(int index) const {
+		auto it = this->stored_term.find(index);
+		if (it != this->stored_term.end()) {
+			return it->second;
+		}
+		else return std::shared_ptr<CSGNode>();
+	}
+
 private:
   void addToParent(const State &state, const AbstractNode &node);
 	void applyToChildren(State &state, const AbstractNode &node, OpenSCADOperator op);
-	shared_ptr<CSGNode> evaluateCSGNodeFromGeometry(State &state, 
+	shared_ptr<CSGNode> evaluateCSGNodeFromGeometry(State &state,
 																									const shared_ptr<const class Geometry> &geom,
-																									const class ModuleInstantiation *modinst, 
+																									const class ModuleInstantiation *modinst,
 																									const AbstractNode &node);
 	void applyBackgroundAndHighlight(State &state, const AbstractNode &node);
 
