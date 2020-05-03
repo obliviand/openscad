@@ -360,6 +360,7 @@ HEADERS += src/version_check.h \
            src/boost-utils.h \
            src/LibraryInfo.h \
            src/svg.h \
+           src/mouseselector.h \
            \
            src/OffscreenView.h \
            src/OffscreenContext.h \
@@ -537,6 +538,7 @@ SOURCES += \
            src/LibraryInfoDialog.cc\
            \
            src/comment.cpp \
+           src/mouseselector.cc \
            \
            src/parameter/ParameterWidget.cc\
            src/parameter/parameterobject.cpp \
